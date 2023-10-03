@@ -18,6 +18,10 @@ import Image from "next/image";
 import { ChangeEvent, useState } from "react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { isBase64Image } from "@/lib/utils";
+import { useUploadThing } from "@/lib/uploadthing";
+import { updateUser } from "@/lib/actions/user.action";
+import { usePathname, useRouter } from "next/navigation";
 
 
  interface Props {
@@ -33,7 +37,11 @@ import { Textarea } from "../ui/textarea";
  };
 
 const AccountProfile = ({ user, btnTitle }: Props ) => {
-    const [files, setFiles] = useState<File[]>([]);
+     const [files, setFiles] = useState<File[]>([]);
+      const { startUpload } = useUploadThing("media");
+      const pathname = usePathname();
+      const router = useRouter();  
+
       const form = useForm({
         resolver: zodResolver(UserValidation),
         defaultValues: {
@@ -50,12 +58,12 @@ const AccountProfile = ({ user, btnTitle }: Props ) => {
 
            const fileReader = new FileReader();
 
-           if (e.target.files && e.target.files.length  > 1) {
+           if (e.target.files && e.target.files.length  > 0) {
               const file = e.target.files[0];
 
               setFiles(Array.from(e.target.files));
 
-              if(file.type.includes("image")) return;
+              if(!file.type.includes("image")) return;
 
               fileReader.onload = async (e) => {
                  const imageDataURL = e.target?.result?.toString() || "";
@@ -65,11 +73,36 @@ const AccountProfile = ({ user, btnTitle }: Props ) => {
         }
       }
 
-      function onSubmit(values: z.infer<typeof UserValidation>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
-        console.log(values)
-      }
+      const onSubmit = async (values: z.infer<typeof UserValidation>)  => {
+         const blob = values.profile_photo;
+
+         const hasImageChanged = isBase64Image(blob);
+
+         if(hasImageChanged) {
+          const imgRes = await startUpload(files);
+          
+            if (imgRes && imgRes[0].url) {
+              values.profile_photo = imgRes[0].url;
+          }
+
+         };
+
+         await updateUser(
+          {
+          userId: user.id,
+          username: values.username,
+          name: values.name,
+          image: values.profile_photo,
+          bio:values.bio,
+          path: pathname
+           });
+
+           if(pathname ==="/profile/edit") {
+            router.back();
+           } else {
+            router.push("/");
+           };
+          }
 
     return (
       <Form {...form}>
@@ -134,7 +167,7 @@ const AccountProfile = ({ user, btnTitle }: Props ) => {
           )}
           />
 
-<FormField
+         <FormField
           control={form.control}
           name="username"
           render={({ field }) => (
@@ -153,7 +186,7 @@ const AccountProfile = ({ user, btnTitle }: Props ) => {
           )}
           />
 
-<FormField
+         <FormField
           control={form.control}
           name="bio"
           render={({ field }) => (
@@ -175,7 +208,11 @@ const AccountProfile = ({ user, btnTitle }: Props ) => {
         
         <Button type="submit" className="bg-primary-500">Submit</Button>
       </form>
+      
     </Form>
+
+
+
     )
 };
 

@@ -1,7 +1,8 @@
+
 import AccountProfile from "@/components/forms/AccountProfile";
 import { currentUser } from "@clerk/nextjs";
 
-async function Page(){
+async function Page({}){
     const user = await currentUser();
 
     const userInfo = {};
@@ -30,7 +31,7 @@ async function Page(){
                 btnTitle="Continue"
                 />
             </section>
-        </main>
+            </main>
     )
 };
 
