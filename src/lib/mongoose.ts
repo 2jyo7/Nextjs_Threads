@@ -10,11 +10,11 @@ export const connectDB = async () => {
     if (isConnected) {console.log(" MongoDB is already connected") };
 
     try {
-        const mongoConnect = await mongoose.connect("process.env.MongoDb_URL");
+        await mongoose.connect(process.env.MongoDb_URL!);
 
         isConnected = true;
         console.log(" MongoDB is connected");
     } catch (error: any) {
-         throw new Error(error.message);
+         console.log(error.message);
     }
 }
